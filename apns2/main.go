@@ -7,9 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sideshow/apns2"
-	"github.com/sideshow/apns2/certificate"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/finn0/apns2"
+	"github.com/finn0/apns2/certificate"
 )
 
 var (

@@ -4,11 +4,15 @@ APNS/2 is a go package designed for simple, flexible and fast Apple Push Notific
 
 [![Build Status](https://travis-ci.org/sideshow/apns2.svg?branch=master)](https://travis-ci.org/sideshow/apns2)  [![Coverage Status](https://coveralls.io/repos/sideshow/apns2/badge.svg?branch=master&service=github)](https://coveralls.io/github/sideshow/apns2?branch=master)  [![GoDoc](https://godoc.org/github.com/sideshow/apns2?status.svg)](https://godoc.org/github.com/sideshow/apns2)
 
+## Notes
+This project is forked from https://github.com/sideshow/apns2.  
+It enables go modules and fixes some vulnerable dependencies.
+
 ## Features
 
 - Uses new Apple APNs HTTP/2 connection
 - Fast - See [notes on speed](https://github.com/sideshow/apns2/wiki/APNS-HTTP-2-Push-Speed)
-- Works with go 1.7 and later
+- Tested with go 1.17
 - Supports new Apple Token Based Authentication (JWT)
 - Supports new iOS 10 features such as Collapse IDs, Subtitles and Mutable Notifications
 - Supports new iOS 15 fetaures interruptionLevel and relevanceScore
@@ -23,7 +27,7 @@ APNS/2 is a go package designed for simple, flexible and fast Apple Push Notific
 - Install apns2:
 
 ```sh
-go get -u github.com/sideshow/apns2
+go get -u github.com/finn0/apns2
 ```
 
 If you are running the test suite you will also need to install testify:
@@ -40,8 +44,8 @@ import (
   "log"
   "fmt"
 
-  "github.com/sideshow/apns2"
-  "github.com/sideshow/apns2/certificate"
+  "github.com/finn0/apns2"
+  "github.com/finn0/apns2/certificate"
 )
 
 func main() {
@@ -132,7 +136,7 @@ notification.Payload = payload
 client.Push(notification)
 ```
 
-Refer to the [payload](https://godoc.org/github.com/sideshow/apns2/payload) docs for more info.
+Refer to the [payload](https://godoc.org/github.com/finn0/apns2/payload) docs for more info.
 
 ## Response, Error handling
 
