@@ -7,6 +7,7 @@
 _obj
 _test
 .idea
+certificate/_fixtures/finn
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -30,3 +31,5 @@ _testmain.go
 /*.p8
 
 .DS_Store
+
+Makefile

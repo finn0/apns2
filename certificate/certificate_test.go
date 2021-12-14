@@ -43,6 +43,12 @@ func TestBadPasswordP12File(t *testing.T) {
 	assert.Equal(t, errors.New("pkcs12: decryption password incorrect").Error(), err.Error())
 }
 
+func TestCAIncorporatedP12File(t *testing.T) {
+	cer, err := certificate.FromP12File("_fixtures/certificate-valid-ca.p12", "")
+	assert.Nil(t, err, err)
+	_ = cer
+}
+
 // PEM
 
 func TestValidCertificateFromPemFile(t *testing.T) {
@@ -105,4 +111,10 @@ func TestNoCertificatePemFile(t *testing.T) {
 	cer, err := certificate.FromPemFile("_fixtures/certificate-no-certificate.pem", "")
 	assert.Equal(t, tls.Certificate{}, cer)
 	assert.Equal(t, certificate.ErrNoCertificate, err)
+}
+
+func TestCAIncorporatedPemFile(t *testing.T) {
+	cer, err := certificate.FromPemFile("_fixtures/certificate-valid-ca.pem", "")
+	assert.Nil(t, err, err)
+	assert.NotEqual(t, tls.Certificate{}, cer)
 }
