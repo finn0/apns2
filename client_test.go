@@ -6,20 +6,20 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/net/http2"
 
-	apns "github.com/sideshow/apns2"
-	"github.com/sideshow/apns2/certificate"
-	"github.com/sideshow/apns2/token"
+	apns "github.com/finn0/apns2"
+	"github.com/finn0/apns2/certificate"
+	"github.com/finn0/apns2/token"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -125,7 +125,7 @@ func TestClientNameToCertificate(t *testing.T) {
 }
 
 func TestDialTLSTimeout(t *testing.T) {
-	apns.TLSDialTimeout = 10 * time.Millisecond
+	apns.TLSDialTimeout = time.Millisecond
 	crt, _ := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
 	client := apns.NewClient(crt)
 	dialTLS := client.HTTPClient.Transport.(*http2.Transport).DialTLS
@@ -139,7 +139,7 @@ func TestDialTLSTimeout(t *testing.T) {
 	if _, e = dialTLS("tcp", address, nil); e == nil {
 		t.Fatal("Dial completed successfully")
 	}
-	if !strings.Contains(e.Error(), "timed out") {
+	if !errors.Is(e, context.DeadlineExceeded) {
 		t.Errorf("resulting error not a timeout: %s", e)
 	}
 }
