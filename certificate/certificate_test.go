@@ -44,9 +44,8 @@ func TestBadPasswordP12File(t *testing.T) {
 }
 
 func TestCAIncorporatedP12File(t *testing.T) {
-	cer, err := certificate.FromP12File("_fixtures/certificate-valid-ca.p12", "")
-	assert.Nil(t, err, err)
-	_ = cer
+	_, err := certificate.FromP12File("_fixtures/certificate-valid-ca.p12", "")
+	assert.NoError(t, err, err)
 }
 
 // PEM

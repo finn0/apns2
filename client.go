@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -31,10 +32,12 @@ var (
 	// TLSDialTimeout is the maximum amount of time a dial will wait for a connect
 	// to complete.
 	TLSDialTimeout = 20 * time.Second
+
 	// HTTPClientTimeout specifies a time limit for requests made by the
 	// HTTPClient. The timeout includes connection time, any redirects,
 	// and reading the response body.
 	HTTPClientTimeout = 60 * time.Second
+
 	// TCPKeepAlive specifies the keep-alive period for an active network
 	// connection. If zero, keep-alives are not enabled.
 	TCPKeepAlive = 60 * time.Second
@@ -70,8 +73,8 @@ type connectionCloser interface {
 }
 
 // NewClient returns a new Client with an underlying http.Client configured with
-// the correct APNs HTTP/2 transport settings. It does not connect to the APNs
-// until the first Notification is sent via the Push method.
+// the correct APNs HTTP/2 transport settings, and TLS 1.2 or later. It does not
+// connect to the APNs until the first Notification is sent via the Push method.
 //
 // As per the Apple APNs Provider API, you should keep a handle on this client
 // so that you can keep your connections with APNs open across multiple
@@ -83,9 +86,7 @@ type connectionCloser interface {
 func NewClient(certificate tls.Certificate) *Client {
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{certificate},
-	}
-	if len(certificate.Certificate) > 0 {
-		tlsConfig.BuildNameToCertificate()
+		MinVersion:   tls.VersionTLS12,
 	}
 	transport := &http2.Transport{
 		TLSClientConfig: tlsConfig,
@@ -184,7 +185,7 @@ func (c *Client) PushWithContext(ctx Context, n *Notification) (*Response, error
 	response.ApnsID = httpRes.Header.Get("apns-id")
 
 	decoder := json.NewDecoder(httpRes.Body)
-	if err := decoder.Decode(&response); err != nil && err != io.EOF {
+	if err = decoder.Decode(&response); err != nil && !errors.Is(err, io.EOF) {
 		return &Response{}, err
 	}
 	return response, nil
