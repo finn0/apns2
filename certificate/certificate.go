@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"golang.org/x/crypto/pkcs12"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 // Possible errors when parsing a certificate.
@@ -39,10 +39,16 @@ func FromP12File(filename string, password string) (tls.Certificate, error) {
 // FromP12Bytes loads a PKCS#12 certificate from an in memory byte array and
 // returns a tls.Certificate.
 //
+// This function adds support to load p12 files with cert and key combined
+// as well as password protected keys which are both common with APNs
+// certificates. Usually you should generate a pem file with p12 file to avoid
+// a p12 file that is incorporated with a root certificate.
+// For more details, go to https://github.com/golang/go/issues/14015.
+//
 // Use "" as the password argument if the PKCS#12 certificate is not password
 // protected.
 func FromP12Bytes(bytes []byte, password string) (tls.Certificate, error) {
-	key, cert, err := pkcs12.Decode(bytes, password)
+	key, cert, _, err := pkcs12.DecodeChain(bytes, password)
 	if err != nil {
 		return tls.Certificate{}, err
 	}
