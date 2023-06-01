@@ -8,11 +8,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/finn0/apns2/token"
@@ -29,18 +28,24 @@ const (
 var DefaultHost = HostDevelopment
 
 var (
-	// TLSDialTimeout is the maximum amount of time a dial will wait for a connect
-	// to complete.
-	TLSDialTimeout = 20 * time.Second
-
 	// HTTPClientTimeout specifies a time limit for requests made by the
 	// HTTPClient. The timeout includes connection time, any redirects,
 	// and reading the response body.
 	HTTPClientTimeout = 60 * time.Second
 
+	// ReadIdleTimeout is the timeout after which a health check using a ping
+	// frame will be carried out if no frame is received on the connection. If
+	// zero, no health check is performed.
+	ReadIdleTimeout = 15 * time.Second
+
 	// TCPKeepAlive specifies the keep-alive period for an active network
-	// connection. If zero, keep-alives are not enabled.
-	TCPKeepAlive = 60 * time.Second
+	// connection. If zero, keep-alive probes are sent with a default value
+	// (currently 15 seconds)
+	TCPKeepAlive = 15 * time.Second
+
+	// TLSDialTimeout is the maximum amount of time a dial will wait for a connect
+	// to complete.
+	TLSDialTimeout = 20 * time.Second
 )
 
 // DialTLS is the default dial function for creating TLS connections for
@@ -91,6 +96,7 @@ func NewClient(certificate tls.Certificate) *Client {
 	transport := &http2.Transport{
 		TLSClientConfig: tlsConfig,
 		DialTLS:         DialTLS,
+		ReadIdleTimeout: ReadIdleTimeout,
 	}
 	return &Client{
 		HTTPClient: &http.Client{
@@ -112,7 +118,8 @@ func NewClient(certificate tls.Certificate) *Client {
 // connection and disconnection as a denial-of-service attack.
 func NewTokenClient(token *token.Token) *Client {
 	transport := &http2.Transport{
-		DialTLS: DialTLS,
+		DialTLS:         DialTLS,
+		ReadIdleTimeout: ReadIdleTimeout,
 	}
 	return &Client{
 		Token: token,
@@ -144,7 +151,7 @@ func (c *Client) Production() *Client {
 //
 // Use PushWithContext if you need better cancellation and timeout control.
 func (c *Client) Push(n *Notification) (*Response, error) {
-	return c.PushWithContext(nil, n)
+	return c.PushWithContext(context.Background(), n)
 }
 
 // PushWithContext sends a Notification to the APNs gateway. Context carries a
@@ -162,33 +169,33 @@ func (c *Client) PushWithContext(ctx Context, n *Notification) (*Response, error
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%v/3/device/%v", c.Host, n.DeviceToken)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	url := c.Host + "/3/device/" + n.DeviceToken
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
 
 	if c.Token != nil {
-		c.setTokenHeader(req)
+		c.setTokenHeader(request)
 	}
 
-	setHeaders(req, n)
+	setHeaders(request, n)
 
-	httpRes, err := c.requestWithContext(ctx, req)
+	response, err := c.HTTPClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
-	defer httpRes.Body.Close()
+	defer response.Body.Close()
 
-	response := &Response{}
-	response.StatusCode = httpRes.StatusCode
-	response.ApnsID = httpRes.Header.Get("apns-id")
+	r := &Response{}
+	r.StatusCode = response.StatusCode
+	r.ApnsID = response.Header.Get("apns-id")
 
-	decoder := json.NewDecoder(httpRes.Body)
-	if err = decoder.Decode(&response); err != nil && !errors.Is(err, io.EOF) {
+	decoder := json.NewDecoder(response.Body)
+	if err := decoder.Decode(r); err != nil && err != io.EOF {
 		return &Response{}, err
 	}
-	return response, nil
+	return r, nil
 }
 
 // CloseIdleConnections closes any underlying connections which were previously
@@ -200,7 +207,7 @@ func (c *Client) CloseIdleConnections() {
 
 func (c *Client) setTokenHeader(r *http.Request) {
 	bearer := c.Token.GenerateIfExpired()
-	r.Header.Set("authorization", fmt.Sprintf("bearer %v", bearer))
+	r.Header.Set("authorization", "bearer "+bearer)
 }
 
 func setHeaders(r *http.Request, n *Notification) {
@@ -215,10 +222,10 @@ func setHeaders(r *http.Request, n *Notification) {
 		r.Header.Set("apns-collapse-id", n.CollapseID)
 	}
 	if n.Priority > 0 {
-		r.Header.Set("apns-priority", fmt.Sprintf("%v", n.Priority))
+		r.Header.Set("apns-priority", strconv.Itoa(n.Priority))
 	}
 	if !n.Expiration.IsZero() {
-		r.Header.Set("apns-expiration", fmt.Sprintf("%v", n.Expiration.Unix()))
+		r.Header.Set("apns-expiration", strconv.FormatInt(n.Expiration.Unix(), 10))
 	}
 	if n.PushType != "" {
 		r.Header.Set("apns-push-type", string(n.PushType))
@@ -226,11 +233,4 @@ func setHeaders(r *http.Request, n *Notification) {
 		r.Header.Set("apns-push-type", string(PushTypeAlert))
 	}
 
-}
-
-func (c *Client) requestWithContext(ctx Context, req *http.Request) (*http.Response, error) {
-	if ctx != nil {
-		req = req.WithContext(ctx)
-	}
-	return c.HTTPClient.Do(req)
 }
