@@ -5,9 +5,9 @@ go 1.19
 require (
 	github.com/golang-jwt/jwt/v4 v4.4.1
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/net v0.10.0
+	golang.org/x/net v0.24.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
-	software.sslmate.com/src/go-pkcs12 v0.0.0-20210415151418-c5206de65a78
+	software.sslmate.com/src/go-pkcs12 v0.4.0
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a // indirect
 	github.com/davecgh/go-spew v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
